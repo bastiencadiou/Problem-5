@@ -114,4 +114,17 @@ fit4 <- glm(infect ~ visit + time + log(time-min(time)+1)+visit:log(time-min(tim
 anova(fit2,fit4,test="LRT") #fit2 better
 
 
+#create database
+
+toenail_Control <-subset(toenail,toenail$trt=="Control")
+toenail_Test <-subset(toenail,toenail$trt=="Testing")
+
+#compare modele
+
+fit_con<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
+fit_test<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
+summary(fit_con)
+summary(fit_test)
+
+#The model seems much better fitted to the test observation.
 
