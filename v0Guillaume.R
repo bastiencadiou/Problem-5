@@ -1,6 +1,6 @@
 ### Initial operations
 ### ++++++++++++++++++++++++++++++++++++++++++++
-setwd("C:/Users/guill/OneDrive/Documents/Charles_University/Advanced Regression Models/Work5")
+setwd("C:/Users/guill/OneDrive/Documents/Charles_University/Advanced Regression Models/Work5/Problem-5-1")
 #
 toenail <- read.table("data.txt", header = TRUE)
 
@@ -11,7 +11,7 @@ summary(toenail)
 ### +++++++++++++++++++++++++++
 toenail <- transform(toenail, 
                      trt = factor(trt, levels = 0:1, labels = c("Control", "Testing")),
-                     visit = factor(visit),infect=factor(infect))
+                     visit = visit,infect=factor(infect))
 summary(toenail)
 length(unique(toenail[, "idnr"]))  ### number of patients = 294
 
@@ -52,6 +52,7 @@ toenail <- transform(toenail, time6 = cut(time, c(-Inf,quanti[2:(length(quanti)-
 
 round(prop.table(table(toenail$time6,toenail$infect),1)*100,1)
 
+
 # <!-- Graph -->
 plot(infect~time6, data = toenail,col=COL)
 #We can note a decline in growth. MOre the time it's importante, 
@@ -79,17 +80,29 @@ anova(fit_time0,fit_time3,test="LRT")
 
 
 ###Y vs visit
-# 2 factors variables 
+with(toenail,boxplot(visit ~ infect))
+#we note a difference.
+#The visite is on average lower for infected persons
 
-table2<-with(toenail,table(infect,visit))
-round(prop.table(table2,margin=1)*100,2)
-#Infected people have a low number of visits in contrast to the uninfected.
 
-#difference
+COL=c("blue","red")
+quanti <- quantile(toenail$visit,seq(0,1,length.out = 7))
+toenail <- transform(toenail, vis6 = cut(time, c(-Inf,quanti[2:(length(quanti)-1)],Inf)))
 
-mosaicplot(table2, las = 3, shade = TRUE)
-with(toenail,chisq.test(infect,visit))
-#The variables seem to have very dependence p-value < 2.2e-16
+round(prop.table(table(toenail$vis6,toenail$infect),1)*100,1)
+
+
+# <!-- Graph -->
+plot(infect~vis6, data = toenail,col=COL)
+#We can note a decline in growth. MOre the visit number it's importante, 
+#more proportion is infect=0
+
+
+#test
+with(toenail,t.test(visit~infect)) #p-value < 2.2e-16 #a big difference.
+
+
+#What relationship
 
 #first model
 
@@ -113,6 +126,10 @@ anova(fit2,fit3,test="LRT") #fit2 better
 fit4 <- glm(infect ~ visit + time + log(time-min(time)+1)+visit:log(time-min(time)+1),data=toenail,family = binomial() )
 anova(fit2,fit4,test="LRT") #fit2 better
 
+#No visit
+fit5 <- glm(infect ~time+log(time-min(time)+1),data=toenail,family = binomial() )
+anova(fit2,fit5,test="LRT") #fit5 better without visit
+
 
 #create database
 
@@ -121,10 +138,40 @@ toenail_Test <-subset(toenail,toenail$trt=="Testing")
 
 #compare modele
 
-fit_con<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
-fit_test<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
+fit_con<-glm(infect ~ time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
+fit_test<-glm(infect ~ time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
 summary(fit_con)
 summary(fit_test)
 
 #The model seems much better fitted to the test observation.
 
+##with trt
+
+fit6 <- glm(infect ~trt+time+log(time-min(time)+1),data=toenail,family = binomial() )
+
+###Analyse
+
+summary(fit6) #p_values trtTesting = 10%
+
+###find the proba for each time
+
+##Testing
+t<-data.frame(time=seq(0,14,by=1),trt=rep("Testing",15))
+##control
+c<-data.frame(time=seq(0,14,by=1),trt=rep("Control",15))
+logtest<-as.vector(predict(fit6,t))
+logcon<-as.vector(predict(fit6,c))
+
+COL <- c("red3", "darkgreen")
+BG <- c("pink", "aquamarine")
+COL2  <- c("red3", "darkgreen")
+PCH <- c(21, 23)
+
+
+par(mar = c(4, 4, 1, 1) + 0.1)
+plot(c(0,14), c(-4,0), xlab = "Time [months]", ylab = "Logit of prob. of infection", type = "n")
+lines(seq(0,14,by=1), logcon, col = COL2[1], lwd = 2)
+points(seq(0,14,by=1), logcon, pch = PCH[1], col = COL[1], bg = BG[1], cex = 1.5)
+lines(seq(0,14,by=1), logtest, col = COL2[2], lwd = 2)
+points(seq(0,14,by=1), logtest, pch = PCH[2], col = COL[2], bg = BG[2], cex = 1.5)
+legend(7, -0.5, legend = c("Control","Testing"), col = COL2, lty = 1, lwd = 2)
