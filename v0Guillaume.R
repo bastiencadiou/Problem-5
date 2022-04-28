@@ -159,19 +159,46 @@ summary(fit6) #p_values trtTesting = 10%
 t<-data.frame(time=seq(0,14,by=1),trt=rep("Testing",15))
 ##control
 c<-data.frame(time=seq(0,14,by=1),trt=rep("Control",15))
-logtest<-as.vector(predict(fit6,t))
-logcon<-as.vector(predict(fit6,c))
 
-COL <- c("red3", "darkgreen")
-BG <- c("pink", "aquamarine")
-COL2  <- c("red3", "darkgreen")
-PCH <- c(21, 23)
+
+lt<-predict(fit6, newdata = t, interval = "confidence",se.fit=TRUE)
+lc<-predict(fit6, newdata = c, interval = "confidence",se.fit=TRUE)
+
+logtest<-data.frame(test0.025=(lt$fit - 1.96*lt$se.fit),test=c((lt$fit)),test0.975=(lt$fit + 1.96*lt$se.fit))
+logcontrol<-data.frame(cont0.025=(lc$fit - 1.96*lc$se.fit),cont=c((lc$fit)),cont0.975=(lc$fit + 1.96*lc$se.fit))
 
 
 par(mar = c(4, 4, 1, 1) + 0.1)
-plot(c(0,14), c(-4,0), xlab = "Time [months]", ylab = "Logit of prob. of infection", type = "n")
-lines(seq(0,14,by=1), logcon, col = COL2[1], lwd = 2)
-points(seq(0,14,by=1), logcon, pch = PCH[1], col = COL[1], bg = BG[1], cex = 1.5)
-lines(seq(0,14,by=1), logtest, col = COL2[2], lwd = 2)
-points(seq(0,14,by=1), logtest, pch = PCH[2], col = COL[2], bg = BG[2], cex = 1.5)
-legend(7, -0.5, legend = c("Control","Testing"), col = COL2, lty = 1, lwd = 2)
+plot(c(0,14), c(-4,0), xlab = "Time [months]", ylab = "logit prob. of infection", type = "n")
+lines(seq(0,14,by=1), logcontrol$cont, col = "red", lwd = 2)
+lines(seq(0,14,by=1), logcontrol$cont0.025, col = "orange", lwd = 2)
+lines(seq(0,14,by=1), logcontrol$cont0.975, col = "orange", lwd = 2)
+lines(seq(0,14,by=1), logtest$test, col = "darkgreen", lwd = 2)
+lines(seq(0,14,by=1), logtest$test0.025, col = "green", lwd = 2)
+lines(seq(0,14,by=1), logtest$test0.975, col = "green", lwd = 2)
+legend(9, -1, legend = c("Control","interval Control","Testing","interval Testing"), col = c("red","orange","darkgreen","green"), lty = 1, lwd = 2)
+
+
+
+
+#The probability of infection of group Control is always higher than
+#group Testing  at any time.
+
+###empirique
+
+iTAB <- with(toenail, table(time6, infect, trt))
+(pCont <- prop.table(iTAB[,,1], margin = 1)[,2])
+(logitCont <- log(pCont / (1 - pCont)))
+x1<-with(toenail,tapply(time, time6, mean))
+
+(pTest <- prop.table(iTAB[,,2], margin = 1)[,2])
+(logitTest <- log(pTest / (1 - pTest)))
+
+
+par(mar = c(4, 4, 1, 1) + 0.1)
+plot(c(0,14), c(-4,0), xlab = "Time [months]", ylab = "logit prob. of infection", type = "n")
+lines(seq(0,14,by=1), logcontrol$cont, col = "red", lwd = 2)
+lines(x1, logitCont, col = "orange", lwd = 2)
+lines(seq(0,14,by=1), logtest$test, col = "darkgreen", lwd = 2)
+lines(x1, logitTest, col = "green", lwd = 2)
+legend(8, 0, legend = c("Control-model","Control-empirique","Testing-model","Testing-empirique"), col = c("red","orange","darkgreen","green"), lty = 1, lwd = 2)
