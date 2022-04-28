@@ -60,6 +60,7 @@ prop.table(iTAB[,,2], margin = 1)     ### proportions in Testing group
 (tTest <- with(subset(toenail, trt == 1), tapply(time, visit, mean)))
 (TLIM <- range(c(tCont, tTest)))
 
+#table(toenail$visit)
 
 ### Scatterplot with empirical probabilities of infection
 ### per visit

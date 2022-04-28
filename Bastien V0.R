@@ -1,1 +1,47 @@
+rm(list=ls())
 toenail <- read.table("toenail.txt", header = TRUE)
+
+#create database
+
+toenail_Control <-subset(toenail,toenail$trt=="Control")
+toenail_Test <-subset(toenail,toenail$trt=="Testing")
+
+fit_con<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
+fit_test<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
+summary(fit_con)
+summary(fit_test)
+
+(CI_con = round(exp(confint(fit_con)),2))
+(exp(fit_con$coefficients))
+
+#Package preload
+install.packages("dotwhisker")
+library(dotwhisker)
+library(dplyr)
+
+fit = glm(infect ~time + ftrt, data = toenail, family = binomial)
+summary(fit)
+exp(fit$coefficients)
+
+str(toenail)
+
+# install.packages("magrittr")
+library(magrittr)
+install.packages("gee")
+library(gee)
+?gee
+dep_gee <- gee(infect ~ visit + time,
+               data = toenail, 
+               family = binomial,
+               id = idnr)
+summary(dep_gee)
+exp(dep_gee$coefficients)
+
+URL <- "http://static.lib.virginia.edu/statlab/materials/data/depression.csv"
+dat <- read.csv(URL, stringsAsFactors = TRUE)
+dat$id <- factor(dat$id)
+dat$drug <- relevel(dat$drug, ref = "standard")
+head(dat, n = 3)
+str(dat)
+
+summary(dat)
