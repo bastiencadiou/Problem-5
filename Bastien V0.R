@@ -45,3 +45,12 @@ head(dat, n = 3)
 str(dat)
 
 summary(dat)
+
+par(mfrow=c(1,2))
+fit_con2 <- glm(infect ~time:visit, data= toenail_Control, family = binomial)
+summary(fit_con2)
+plot(exp(fit_con2$coefficients[-1]))
+
+fit_test2 <- glm(infect ~time:visit, data= toenail_Test, family = binomial)
+summary(fit_test2)
+plot(exp(fit_test2$coefficients[-1]))
