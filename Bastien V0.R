@@ -6,10 +6,17 @@ toenail <- read.table("toenail.txt", header = TRUE)
 toenail_Control <-subset(toenail,toenail$trt=="Control")
 toenail_Test <-subset(toenail,toenail$trt=="Testing")
 
-fit_con<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
-fit_test<-glm(infect ~ visit + time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
+fit_con<-glm(infect ~  time+log(time-min(time)+1),data=toenail_Control,family = binomial() )
+fit_test<-glm(infect ~  time+log(time-min(time)+1),data=toenail_Test,family = binomial() )
 summary(fit_con)
 summary(fit_test)
+
+?predict
+fitted = predict(fit_con)
+fitted_2 = fit_con$fitted.values
+
+plot(fitted~ toenail_Control$time)
+plot(fitted_2~ toenail_Control$time)
 
 (CI_con = round(exp(confint(fit_con)),2))
 (exp(fit_con$coefficients))
