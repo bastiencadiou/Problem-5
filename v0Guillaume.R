@@ -202,3 +202,5 @@ lines(x1, logitCont, col = "orange", lwd = 2)
 lines(seq(0,14,by=1), logtest$test, col = "darkgreen", lwd = 2)
 lines(x1, logitTest, col = "green", lwd = 2)
 legend(8, 0, legend = c("Control-model","Control-empirique","Testing-model","Testing-empirique"), col = c("red","orange","darkgreen","green"), lty = 1, lwd = 2)
+
+
