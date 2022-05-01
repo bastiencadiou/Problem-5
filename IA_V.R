@@ -186,3 +186,23 @@ lines(tTest, estOR_Test(tTest), col = 'purple', type = 'b')
 legend(13, 0.75, legend = names(PCH), pch = PCH, col = COL, pt.bg = BG, bty = "n")
 legend(11.5, 0.75, legend = c("", ""), pch = PCH, col = COL2, pt.bg = COL2, lwd = 2, bty = "n")
 legend(10, 0.6, legend = c('Estimated Control', 'Estimated Testing'), col = c('blue', 'purple'), lty = 1, lwd = 2)
+
+#final assessment of difference in testing and control group
+toenail_testing_1 <- subset(toenail_testing, visit == 1)
+toenail_control_1 <- subset(toenail_control, visit == 1)
+toenail_testing_7 <- subset(toenail_testing, visit == 7)
+toenail_control_7 <- subset(toenail_control, visit == 7)
+
+t.test(toenail_control_1$infect, toenail_testing_1$infect)
+t.test(toenail_control_7$infect, toenail_testing_7$infect)
+
+#further model
+mod_a_0 <- glm(formula = infect ~ I(time^2) + time, family = binomial, data = toenail)
+
+mod_a_all <- glm(formula = infect ~ I(time^2) + time + ftrt:I(time^2) + ftrt:time + ftrt, family = binomial, data = toenail)
+
+mod_a_1 <- glm(formula = infect ~ I(time^2) + time + ftrt, family = binomial, data = toenail)
+
+mod_a_2 <- glm(formula = infect ~ I(time^2) + time + ftrt + ftrt:time, family = binomial, data = toenail)
+
+anova(mod_a_0, mod_a_2, test = "LRT") #deviance test for submodel testing to check if testing treatment has a significant influence
