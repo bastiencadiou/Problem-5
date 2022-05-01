@@ -196,11 +196,17 @@ x1<-with(toenail,tapply(time, time6, mean))
 
 
 par(mar = c(4, 4, 1, 1) + 0.1)
-plot(c(0,14), c(-4,0), xlab = "Time [months]", ylab = "logit prob. of infection", type = "n")
+plot(c(0,14), c(-3,0), xlab = "Time [months]", ylab = "logit prob. of infection", type = "n")
 lines(seq(0,14,by=1), logcontrol$cont, col = "red", lwd = 2)
 lines(x1, logitCont, col = "orange", lwd = 2)
 lines(seq(0,14,by=1), logtest$test, col = "darkgreen", lwd = 2)
 lines(x1, logitTest, col = "green", lwd = 2)
 legend(8, 0, legend = c("Control-model","Control-empirique","Testing-model","Testing-empirique"), col = c("red","orange","darkgreen","green"), lty = 1, lwd = 2)
 
+###
+library(xtable)
+xtable(summary(fit5))
 
+##confidance interval
+
+confint(fit5)
