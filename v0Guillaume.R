@@ -209,4 +209,10 @@ xtable(summary(fit5))
 
 ##confidance interval
 
-confint(fit5)
+xtable(confint(fit5))
+
+
+plot(as.factor(infect)~as.factor(visit), data = toenail,col=COL,ylab="probability of infection",xlab="Number of visit")
+
+
+with(toenail,cor(time,visit))
