@@ -32,12 +32,15 @@ length(unique(toenail[, "idnr"]))  ### number of patients = 294
 table1<-with(toenail,table(trt,infect))
 round(prop.table(table1,margin=1)*100,2)
 
+library(xtable)
+print(xtable(round(prop.table(table1,margin=1)*100,2), digits = c(0,1,1)))
 #The control group appears more infected than the test group. 
 mosaicplot(table1, las = 3, shade = TRUE)
 with(toenail,chisq.test(trt,infect))
+
 #The variables seem to have very low independence
 #maybe normal
-
+?chisq.test
 ###Y vs time
 # 1 factors variables and 1 continues.
 
@@ -203,6 +206,7 @@ lines(seq(0,14,by=1), logtest$test, col = "darkgreen", lwd = 2)
 lines(x1, logitTest, col = "green", lwd = 2)
 legend(8, 0, legend = c("Control-model","Control-empirique","Testing-model","Testing-empirique"), col = c("red","orange","darkgreen","green"), lty = 1, lwd = 2)
 
+<<<<<<< HEAD
 ###
 library(xtable)
 xtable(summary(fit5))
@@ -216,3 +220,5 @@ plot(as.factor(infect)~as.factor(visit), data = toenail,col=COL,ylab="probabilit
 
 
 with(toenail,cor(time,visit))
+=======
+>>>>>>> 7bc9a8cc383c964c251f5f2814492026f712d87d

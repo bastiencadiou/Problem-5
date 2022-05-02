@@ -1,6 +1,13 @@
 setwd("C:/Unizeug/Übungen/CU_AdvRegressionModels/Problem-5/")
 rm(list=ls())
 
+library("Epi")
+library("splines")
+library("foreign")
+library(questionr)
+library("latex2exp")
+library(xtable)
+
 # initial exploration
 toenail <- read.table("toenail.txt", header = TRUE)
 
@@ -11,6 +18,7 @@ summary(toenail)
 toenail[1:12,]
 
 #set up Graphics device outside of RStudio
+dev.new()
 dev.new() # a new window should pop up
 
 
@@ -64,6 +72,8 @@ prop.table(iTAB[,,2], margin = 1)     ### proportions in Testing group
 (tTest <- with(subset(toenail, trt == 1), tapply(time, visit, mean))) #testing
 (TLIM <- range(c(tCont, tTest)))
 
+pTable <- round(rbind(pCont,pTest),3)*100
+print(xtable(pTable), digits = c(0,1,1))
 
 ### Scatterplot with empirical probabilities of infection
 ### per visit
@@ -97,5 +107,102 @@ lines(tTest, logitTest, col = COL2["Testing"], lwd = 2)
 points(tTest, logitTest, pch = PCH["Testing"], col = COL["Testing"], bg = BG["Testing"], cex = 1.5)
 legend(7, -0.5, legend = names(PCH), col = COL2, lty = 1, lwd = 2)
 
+#TASK FOR YOU: Use standard logistic model (in which independence of observations is assumed) and develop reasonable model capturing evolution of probabilities (1) of infection over time. Explain, how those probabilities are modelled (in your final model) and provide estimates of the model parameters (including confidence intervals) obtained using a method of maximum-likelihood while assuming independence of observations. Plot estimated versions of the two functions (1) in one plot with empirical probabilities of infection per visit.
 
+#split data
+toenail_control = subset(toenail, ftrt == 'Control')
+toenail_testing = subset(toenail, ftrt == 'Testing')
+#try overall model
+mod_all_time <- glm(formula = infect ~ (time + ftrt)^2, family = binomial, data = toenail)
+summary(mod_all_time) #well could be better
+drop1(mod_all_time)
 
+mod_all_fvisit <- glm(formula = infect ~ (fvisit + ftrt)^2, family = binomial, data = toenail)
+summary(mod_all_fvisit)
+drop1(mod_all_fvisit)
+
+mod_log <- glm(formula = infect ~ log(time+1) + ftrt + ftrt:log(time+1), family = binomial, data = toenail) #no significant improvement
+
+#do separate models for control and testing group
+tspline_control <- splinefun(tCont, logitCont)
+tspline_test <- splinefun(tTest, logitTest)
+
+mod_c.0 <- glm(formula = infect ~ time, family = binomial, data = toenail_control)
+mod_c.10 <- glm(formula = infect ~ log(time+1), family = binomial, data = toenail_control)
+anova(mod_c.0, mod_c.10, test = "LRT") # worse deviance, rejected
+mod_c.10a <- glm(formula = infect ~ log(time+1) + time, family = binomial, data = toenail_control) ##try with log + linear
+anova(mod_c.0, mod_c.10a, test = "LRT") # no significance, rejected
+
+mod_c.11 <- glm(formula = infect ~ I(time^2)+time, family = binomial, data = toenail_control) # try quadratic transformation
+anova(mod_c.0, mod_c.11, test = "LRT") # significance, take this model of quadratic transformation
+
+mod_c.12 <- glm(formula = infect ~ I(time^2)+time + log(time+1), family = binomial, data = toenail_control)
+summary(mod_c.12) #coef for log looks interesting
+anova(mod_c.11, mod_c.12, test = "LRT") # on the edge, but without log(.) should be kept
+
+#plot transformation
+trafo_time <- function(x) coef(mod_c.11)['(Intercept)'] + coef(mod_c.11)['time'] * x + coef(mod_c.11)['I(time^2)'] * x*x
+x_seq = seq(from = 0, to = 13)
+lines(x_seq, trafo_time(x_seq), col = 'blue')
+legend(7, -0.5, legend = append(names(PCH), 'Transformation for control'), col = append(COL2, 'blue'), lty = 1, lwd = 2)
+
+mod_t.0 <- glm(formula = infect ~ time, family = binomial, data = toenail_testing)
+mod_t.11 <- glm(formula = infect ~ I(time^2)+time, family = binomial, data = toenail_testing) # try quadratic transformation
+anova(mod_t.0, mod_t.11, test = "LRT") # edge, but keep it for comparison reasons
+
+mod_t.12 <- glm(formula = infect ~ log(time+1) + time, family = binomial, data = toenail_testing)
+mod_t.13 <- glm(formula = infect ~ I(time^3)+time, family = binomial, data = toenail_testing)
+
+#models for each group
+summary(mod_c.11)
+summary(mod_t.11)
+
+(expcoef_control <- round(exp(coef(mod_c.11)),4))
+(expcoef_testing <- round(exp(coef(mod_t.11)),4))
+(ci_control <- round(exp(confint(mod_c.11)),4))
+(ci_testing <- round(exp(confint(mod_t.11)),4))
+
+#examples
+exp(coef(mod_c.11)[3]*5 + coef(mod_c.11)[2]*25)
+exp(coef(mod_c.11)[3]*10 + coef(mod_c.11)[2]*100)
+
+exp(coef(mod_t.11)[3]*5 + coef(mod_t.11)[2]*25)
+exp(coef(mod_t.11)[3]*10 + coef(mod_t.11)[2]*100)
+
+#general function
+estOR_Cont <- function(x) exp(coef(mod_c.11)[1] + coef(mod_c.11)[3] * x + coef(mod_c.11)[2]*x*x)
+estOR_Test <- function(x) exp(coef(mod_t.11)[1] + coef(mod_t.11)[3] * x + coef(mod_t.11)[2]*x*x)
+
+#plotting these
+par(mar = c(4, 4, 1, 1) + 0.1)
+with(toenail, plot(time, infect, pch = PCH[ftrt], col = COL[ftrt], bg = BG[ftrt], xlab = "Time [months]", ylab = "Infection"))
+abline(h = c(0, 1), col = "grey40", lty = 2)
+lines(tCont, pCont, col = COL2["Control"], lwd = 2)
+points(tCont, pCont, pch = PCH["Control"], bg = COL2["Control"], col = COL["Control"], cex = 2)
+lines(tTest, pTest, col = COL2["Testing"], lwd = 2)
+points(tTest, pTest, pch = PCH["Testing"], bg = COL2["Testing"], col = COL["Testing"], cex = 2)
+lines(tCont, estOR_Cont(tCont), col = 'blue', type = 'b')
+lines(tTest, estOR_Test(tTest), col = 'purple', type = 'b')
+legend(13, 0.75, legend = names(PCH), pch = PCH, col = COL, pt.bg = BG, bty = "n")
+legend(11.5, 0.75, legend = c("", ""), pch = PCH, col = COL2, pt.bg = COL2, lwd = 2, bty = "n")
+legend(10, 0.6, legend = c('Estimated Control', 'Estimated Testing'), col = c('blue', 'purple'), lty = 1, lwd = 2)
+
+#final assessment of difference in testing and control group
+toenail_testing_1 <- subset(toenail_testing, visit == 1)
+toenail_control_1 <- subset(toenail_control, visit == 1)
+toenail_testing_7 <- subset(toenail_testing, visit == 7)
+toenail_control_7 <- subset(toenail_control, visit == 7)
+
+t.test(toenail_control_1$infect, toenail_testing_1$infect)
+t.test(toenail_control_7$infect, toenail_testing_7$infect)
+
+#further model
+mod_a_0 <- glm(formula = infect ~ I(time^2) + time, family = binomial, data = toenail)
+
+mod_a_all <- glm(formula = infect ~ I(time^2) + time + ftrt:I(time^2) + ftrt:time + ftrt, family = binomial, data = toenail)
+
+mod_a_1 <- glm(formula = infect ~ I(time^2) + time + ftrt, family = binomial, data = toenail)
+
+mod_a_2 <- glm(formula = infect ~ I(time^2) + time + ftrt + ftrt:time, family = binomial, data = toenail)
+
+anova(mod_a_0, mod_a_2, test = "LRT") #deviance test for submodel testing to check if testing treatment has a significant influence
